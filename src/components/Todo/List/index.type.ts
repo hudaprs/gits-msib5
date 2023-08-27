@@ -2,7 +2,7 @@
 import { TTodo } from '../../../types/todo.type'
 
 export type TListProps = {
-	todoList: TTodo[]
+	list: TTodo[]
 }
 
 export type TListEmits = {
