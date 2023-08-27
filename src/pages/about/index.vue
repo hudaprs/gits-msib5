@@ -1,1 +1,1 @@
-<template>&copy; MSIB Batch 5</template>
+<template>&copy; Huda Prasetyo - MSIB Batch 5</template>
