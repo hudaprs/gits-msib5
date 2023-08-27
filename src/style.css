@@ -37,3 +37,7 @@ button:hover {
 	max-width: 920px;
 	margin: 0 auto;
 }
+
+.text-center {
+	text-align: center;
+}

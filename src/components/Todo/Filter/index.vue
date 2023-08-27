@@ -3,7 +3,7 @@
 import { TFilterEmits, TFilterProps } from './index.type'
 
 // Define props and emits
-const { filter } = defineProps<TFilterProps>()
+const props = defineProps<TFilterProps>()
 const emits = defineEmits<TFilterEmits>()
 
 const buttons = [
@@ -15,17 +15,19 @@ const buttons = [
 
 <template>
 	<div class="wrapper">
-		<p>Items Left</p>
+		<p>{{ props.todoListLength }} Items Left</p>
 		<div>
 			<button
 				v-for="button in buttons"
-				:class="{ active: filter === button.value }"
+				:class="{ active: props.filter === button.value }"
 				@click="emits('change', button.value as TFilterProps['filter'])"
 			>
 				{{ button.label }}
 			</button>
 		</div>
-		<p class="clear-completed">Clear Completed</p>
+		<p class="clear-completed" @click="emits('clear-completed')">
+			Clear Completed
+		</p>
 	</div>
 </template>
 

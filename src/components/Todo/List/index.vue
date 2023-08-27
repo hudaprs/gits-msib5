@@ -3,20 +3,64 @@
 import { ref } from 'vue'
 
 // Types
-import { TListProps } from './index.type'
+import { TListEmits, TListProps } from './index.type'
 
 // Define props and emits
 const props = defineProps<TListProps>()
+const emits = defineEmits<TListEmits>()
+
+// Common State
+const selectedTodoId = ref<number | null>(null)
+
+/**
+ * @description Watch any change when mouse enter to todo item
+ *
+ * @param {number} id
+ *
+ * @return {void} void
+ */
+const onMouseEnter = (id: number): void => {
+	selectedTodoId.value = id
+}
+
+/**
+ * @description Watch any change when mouse leave from todo item
+ *
+ * @return {void} void
+ */
+const onMouseLeave = (): void => {
+	selectedTodoId.value = null
+}
 </script>
 
 <template>
 	<ul>
-		<li v-for="todo in props.todoList" :on-mouseenter="">
-			<p>
-				{{ todo.title }}
-			</p>
+		<li
+			v-for="todo in props.todoList"
+			@mouseenter="onMouseEnter(todo.id)"
+			@mouseleave="onMouseLeave"
+		>
+			<div class="title-wrapper">
+				<input
+					type="checkbox"
+					:checked="todo.completed"
+					@change="emits('update-status', todo.id)"
+				/>
 
-			<button>X</button>
+				<p :class="{ done: todo.completed }">
+					{{ todo.title }}
+				</p>
+			</div>
+
+			<div class="actions-wrapper">
+				<button
+					class="delete"
+					v-if="todo.id === selectedTodoId"
+					@click="emits('delete', todo.id)"
+				>
+					🗑
+				</button>
+			</div>
 		</li>
 	</ul>
 </template>
@@ -27,10 +71,13 @@ ul {
 	padding: 0;
 }
 
+p {
+	word-break: break-all;
+}
+
 li {
 	padding: 12px 18px;
 	width: 100%;
-	height: 75px;
 	font-size: 24px;
 	font-weight: 400;
 	box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
@@ -40,6 +87,11 @@ li {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 15px;
+}
+
+li p {
+	cursor: pointer;
 }
 
 button {
@@ -54,7 +106,28 @@ button {
 	font-weight: 400;
 }
 
-button:hover {
+button.delete:hover {
 	border: 1px solid #f87171;
+}
+
+.done {
+	text-decoration: line-through;
+}
+
+.title-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+.actions-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+}
+
+input[type='checkbox'] {
+	width: 25px;
+	height: 25px;
 }
 </style>

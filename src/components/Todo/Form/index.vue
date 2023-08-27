@@ -5,6 +5,17 @@ import { TFormProps, TFormEmits } from './index.type'
 // Define props and emitters
 const props = defineProps<TFormProps>()
 const emits = defineEmits<TFormEmits>()
+
+/**
+ * @description Submit form to server
+ *
+ * @return {void} void
+ */
+const onSubmit = (e: Event): void => {
+	e.preventDefault()
+
+	emits('submit', props.title)
+}
 </script>
 
 <template>
@@ -12,9 +23,10 @@ const emits = defineEmits<TFormEmits>()
 		type="text"
 		placeholder="✎ What needs to be done"
 		:value="props.title"
-		@input="
+		@keyup="
 			emits('update:form', 'title', ($event?.target as HTMLInputElement).value)
 		"
+		@keyup.enter="onSubmit"
 	/>
 </template>
 

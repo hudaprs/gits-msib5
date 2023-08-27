@@ -19,15 +19,19 @@ const axios = defaultAxios.create({
 
 // Common State
 let todoForm = ref<TTodoForm>({ title: '' })
+const loading = ref(false)
 const todoList = ref<TTodo[]>([])
 const todoFilter = ref<TTodoFilter>('all')
-const filteredTodoList = computed(() => {
+const filteredTodoList = computed((): TTodo[] => {
 	return todoList.value.filter(todo => {
 		if (todoFilter.value === 'active') return !todo.completed
 		if (todoFilter.value === 'completed') return todo.completed
 		if (todoFilter.value === 'all') return todo
 	})
 })
+const activeTodoList = computed(() =>
+	todoList.value.filter(todo => !todo.completed)
+)
 
 /**
  * @description Watch any change in todo form
@@ -47,6 +51,8 @@ const onChangeForm = (type: string, value: any) => {
  * @return {Promise<void>} Promise<void>
  */
 const fetchTodoList = async (): Promise<void> => {
+	loading.value = true
+
 	try {
 		const { data } = await axios.get('/todos', {
 			params: {
@@ -57,6 +63,8 @@ const fetchTodoList = async (): Promise<void> => {
 		todoList.value = data
 	} catch (_) {
 		//
+	} finally {
+		loading.value = false
 	}
 }
 
@@ -67,7 +75,14 @@ const fetchTodoList = async (): Promise<void> => {
  *
  * @return {Promise<void>} Promise<void>
  */
-const createTodo = async (title: string): Promise<void> => {
+const onCreateTodo = async (title: string): Promise<void> => {
+	if (!title) {
+		alert('Please fill title!')
+		return
+	}
+
+	loading.value = true
+
 	try {
 		const newTodo = {
 			id: Math.random(),
@@ -75,14 +90,75 @@ const createTodo = async (title: string): Promise<void> => {
 			completed: false
 		}
 
-		const { data } = await axios.post('/todos', newTodo)
+		await axios.post('/todos', newTodo)
 
-		console.log('DATA', data)
+		todoForm.value.title = ''
 
 		todoList.value = [newTodo, ...todoList.value]
 	} catch (_) {
 		//
+	} finally {
+		loading.value = false
 	}
+}
+
+/**
+ * @description Update existing todo
+ *
+ * @param {string} title
+ * @param {string} type
+ *
+ * @return {Promise<void>} Promise<void>
+ */
+const onUpdateTodo = async (id: number): Promise<void> => {
+	loading.value = true
+
+	try {
+		let existedTodo = todoList.value.find(todo => todo.id === id) as TTodo
+
+		// Update status
+		existedTodo.completed = !existedTodo.completed
+
+		await axios.put(`/todos/${id}`, existedTodo)
+
+		todoList.value = todoList.value.map(todo =>
+			todo.id === id ? existedTodo : todo
+		)
+	} catch (_) {
+		//
+	} finally {
+		loading.value = false
+	}
+}
+
+/**
+ * @description Delete existing todo
+ *
+ * @param {number} id
+ *
+ * @return {Promise<void>} Promise<void>
+ */
+const onDeleteTodo = async (id: number): Promise<void> => {
+	loading.value = true
+
+	try {
+		await axios.delete(`/todos/${id}`)
+
+		todoList.value = todoList.value.filter(todo => todo.id !== id)
+	} catch (_) {
+		//
+	} finally {
+		loading.value = false
+	}
+}
+
+/**
+ * @description Clear completed
+ *
+ * @return {void} void
+ */
+const onClearCompleted = () => {
+	todoList.value = todoList.value.filter(todo => !todo.completed)
 }
 
 // Do when user came to this page
@@ -96,16 +172,31 @@ onMounted(() => {
 	<h1>Todos</h1>
 
 	<!-- Form -->
-	<todo-form :title="todoForm.title" @update:form="onChangeForm" />
+	<todo-form
+		:title="todoForm.title"
+		@update:form="onChangeForm"
+		@submit="onCreateTodo"
+	/>
 	<!-- End Form -->
 
 	<!-- Filter -->
-	<todo-filter :filter="todoFilter" @change="filter => (todoFilter = filter)" />
+	<todo-filter
+		:filter="todoFilter"
+		:todo-list-length="activeTodoList.length"
+		@change="filter => (todoFilter = filter)"
+		@clear-completed="onClearCompleted"
+	/>
 	<!-- End Filter -->
 
 	<!-- List -->
-	<todo-list :todo-list="filteredTodoList" />
+	<todo-list
+		:todo-list="filteredTodoList"
+		@delete="onDeleteTodo"
+		@update-status="id => onUpdateTodo(id)"
+	/>
 	<!-- End List -->
+
+	<p v-if="loading" class="text-center">Loading...</p>
 </template>
 
 <style scoped>
