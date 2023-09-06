@@ -36,7 +36,7 @@ const onMouseLeave = (): void => {
 <template>
 	<ul>
 		<li
-			v-for="todo in props.todoList"
+			v-for="todo in props.list"
 			@mouseenter="onMouseEnter(todo.id)"
 			@mouseleave="onMouseLeave"
 		>

@@ -1,37 +1,23 @@
 <script setup lang="ts">
 // Vue
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
 // Components
 import TodoForm from '../../components/Todo/Form/index.vue'
 import TodoFilter from '../../components/Todo/Filter/index.vue'
 import TodoList from '../../components/Todo/List/index.vue'
 
-// Axios
-import defaultAxios from 'axios'
+// Store
+import { useTodoStore } from '../../store/modules/todo/todo.store'
 
 // Types
-import { TTodo, TTodoForm, TTodoFilter } from '../../types/todo.type'
+import { TTodoForm } from '../../types/todo.type'
 
-const axios = defaultAxios.create({
-	baseURL: 'https://jsonplaceholder.typicode.com'
-})
+// Store instance
+const todoStore = useTodoStore()
 
 // Common State
 let todoForm = ref<TTodoForm>({ title: '' })
-const loading = ref(false)
-const todoList = ref<TTodo[]>([])
-const todoFilter = ref<TTodoFilter>('all')
-const filteredTodoList = computed((): TTodo[] => {
-	return todoList.value.filter(todo => {
-		if (todoFilter.value === 'active') return !todo.completed
-		if (todoFilter.value === 'completed') return todo.completed
-		if (todoFilter.value === 'all') return todo
-	})
-})
-const activeTodoList = computed(() =>
-	todoList.value.filter(todo => !todo.completed)
-)
 
 /**
  * @description Watch any change in todo form
@@ -46,124 +32,25 @@ const onChangeForm = (type: string, value: any) => {
 }
 
 /**
- * @description Fetch todo list
- *
- * @return {Promise<void>} Promise<void>
- */
-const fetchTodoList = async (): Promise<void> => {
-	loading.value = true
-
-	try {
-		const { data } = await axios.get('/todos', {
-			params: {
-				_limit: 5
-			}
-		})
-
-		todoList.value = data
-	} catch (_) {
-		//
-	} finally {
-		loading.value = false
-	}
-}
-
-/**
  * @description Create new todo
  *
  * @param {string} title
  *
- * @return {Promise<void>} Promise<void>
+ * @return {Promise<void>}
  */
 const onCreateTodo = async (title: string): Promise<void> => {
-	if (!title) {
-		alert('Please fill title!')
-		return
-	}
-
-	loading.value = true
-
 	try {
-		const newTodo = {
-			id: Math.random(),
-			title,
-			completed: false
-		}
-
-		await axios.post('/todos', newTodo)
+		await todoStore.createTodo(title)
 
 		todoForm.value.title = ''
-
-		todoList.value = [newTodo, ...todoList.value]
 	} catch (_) {
 		//
-	} finally {
-		loading.value = false
 	}
-}
-
-/**
- * @description Update existing todo
- *
- * @param {string} title
- * @param {string} type
- *
- * @return {Promise<void>} Promise<void>
- */
-const onUpdateTodo = async (id: number): Promise<void> => {
-	loading.value = true
-
-	try {
-		let existedTodo = todoList.value.find(todo => todo.id === id) as TTodo
-
-		// Update status
-		existedTodo.completed = !existedTodo.completed
-
-		await axios.put(`/todos/${id}`, existedTodo)
-
-		todoList.value = todoList.value.map(todo =>
-			todo.id === id ? existedTodo : todo
-		)
-	} catch (_) {
-		//
-	} finally {
-		loading.value = false
-	}
-}
-
-/**
- * @description Delete existing todo
- *
- * @param {number} id
- *
- * @return {Promise<void>} Promise<void>
- */
-const onDeleteTodo = async (id: number): Promise<void> => {
-	loading.value = true
-
-	try {
-		await axios.delete(`/todos/${id}`)
-
-		todoList.value = todoList.value.filter(todo => todo.id !== id)
-	} catch (_) {
-		//
-	} finally {
-		loading.value = false
-	}
-}
-
-/**
- * @description Clear completed
- *
- * @return {void} void
- */
-const onClearCompleted = () => {
-	todoList.value = todoList.value.filter(todo => !todo.completed)
 }
 
 // Do when user came to this page
 onMounted(() => {
-	fetchTodoList()
+	todoStore.fetchTodoList()
 })
 </script>
 
@@ -181,22 +68,22 @@ onMounted(() => {
 
 	<!-- Filter -->
 	<todo-filter
-		:filter="todoFilter"
-		:todo-list-length="activeTodoList.length"
-		@change="filter => (todoFilter = filter)"
-		@clear-completed="onClearCompleted"
+		:filter="todoStore.filter"
+		:todo-list-length="todoStore.getActiveTodoList.length"
+		@change="todoStore.SET_TODO_FILTER"
+		@clear-completed="todoStore.CLEAR_COMPLETED"
 	/>
 	<!-- End Filter -->
 
 	<!-- List -->
 	<todo-list
-		:todo-list="filteredTodoList"
-		@delete="onDeleteTodo"
-		@update-status="id => onUpdateTodo(id)"
+		:list="todoStore.getFilteredList"
+		@delete="todoStore.deleteTodo"
+		@update-status="id => todoStore.updateTodo(id)"
 	/>
 	<!-- End List -->
 
-	<p v-if="loading" class="text-center">Loading...</p>
+	<p v-if="todoStore.loading" class="text-center">Loading...</p>
 </template>
 
 <style scoped>
